@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Radar Chart Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.15);
+        }
+
+        h1 {
+            text-align: center;
+            color: #2d3748;
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #718096;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+
+
+
+        .chart-container {
+            position: relative;
+            height: 500px;
+            background: #fff;
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.05);
+            border: 1px solid #f1f5f9;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: 1fr 1fr;
+            gap: 20px;
+            margin-top: 30px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            padding: 20px;
+            border-radius: 16px;
+            text-align: center;
+            color: white;
+            box-shadow: 0 10px 20px rgba(240, 147, 251, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:nth-child(2) {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            box-shadow: 0 10px 20px rgba(79, 172, 254, 0.3);
+        }
+
+        .stat-card:nth-child(3) {
+            background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+            box-shadow: 0 10px 20px rgba(67, 233, 123, 0.3);
+        }
+
+        .stat-card:nth-child(4) {
+            background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+            box-shadow: 0 10px 20px rgba(250, 112, 154, 0.3);
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px) scale(1.02);
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+		font-weight: bold;
+        }
+
+        .stat-value {
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 2em;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+                grid-template-rows: repeat(4, 1fr);
+            }
+            
+            .chart-container {
+                height: 400px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Évaluation Diagnostique Stratégique</h1>
+        
+        <div class="chart-container">
+            <canvas id="radarChart"></canvas>
+        </div>
+
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-label">Continuité Managériale</div>
+                <div class="stat-value" id="stat1">75</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Approche de vente par la valeur</div>
+                <div class="stat-value" id="stat2">85</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Pilotage stratégique</div>
+                <div class="stat-value" id="stat3">65</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-label">Excellence Opérationnelle</div>
+                <div class="stat-value" id="stat4">90</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Get URL parameters for values from Tally form redirect
+        function getUrlParams() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return {
+                value1: parseFloat(urlParams.get('value1')) || 75,
+                value2: parseFloat(urlParams.get('value2')) || 85,
+                value3: parseFloat(urlParams.get('value3')) || 65,
+                value4: parseFloat(urlParams.get('value4')) || 90
+            };
+        }
+
+        // Initialize the chart
+        function initChart() {
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            const params = getUrlParams();
+            
+            chart = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: ['Continuité Managériale', 'Approche de vente par la valeur', 'Pilotage stratégique', 'Excellence Opérationnelle'],
+                    datasets: [{
+                        label: 'Votre resultat',
+                        data: [params.value1, params.value2, params.value3, params.value4],
+                        backgroundColor: 'rgba(102, 126, 234, 0.3)',
+                        borderColor: 'rgba(102, 126, 234, 1)',
+                        borderWidth: 4,
+                        pointBackgroundColor: 'rgba(102, 126, 234, 1)',
+                        pointBorderColor: '#fff',
+                        pointBorderWidth: 3,
+                        pointRadius: 10,
+                        pointHoverRadius: 15,
+                        tension: 0.2,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: true,
+                            position: 'top',
+                            labels: {
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                color: '#4a5568'
+                            }
+                        }
+                    },
+                    scales: {
+                        r: {
+                            beginAtZero: true,
+                            max: 100,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.1)',
+                                lineWidth: 2,
+                                circular: true
+                            },
+                            angleLines: {
+                                color: 'rgba(0, 0, 0, 0.1)',
+                                lineWidth: 2
+                            },
+                            pointLabels: {
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                color: '#2d3748'
+                            },
+                            ticks: {
+                                font: {
+                                    size: 14
+                                },
+                                color: '#718096',
+                                stepSize: 20,
+                                showLabelBackdrop: false
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 1500,
+                        easing: 'easeOutQuart'
+                    },
+                    elements: {
+                        line: {
+                            borderJoinStyle: 'round'
+                        }
+                    }
+                }
+            });
+
+            // Update stat cards
+            updateStatCards(params);
+        }
+
+        // Update stat cards with values
+        function updateStatCards(params) {
+            document.getElementById('stat1').textContent = params.value1;
+            document.getElementById('stat2').textContent = params.value2;
+            document.getElementById('stat3').textContent = params.value3;
+            document.getElementById('stat4').textContent = params.value4;
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            initChart();
+        });
+    </script>
+</body>
+</html>
